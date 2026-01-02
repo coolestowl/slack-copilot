@@ -36,13 +36,9 @@ fi
 
 echo "✅ GitHub Copilot CLI found"
 
-# Check if Copilot CLI is authenticated
-if ! copilot --version &> /dev/null; then
-    echo "⚠️  GitHub Copilot CLI may not be authenticated."
-    echo "Please run 'copilot suggest \"test\"' to authenticate."
-fi
-
-echo "✅ GitHub Copilot CLI ready"
+# Note: Authentication check would require actually running a copilot command
+# which would require user interaction on first run
+echo "ℹ️  Note: Copilot CLI will prompt for authentication on first use"
 
 # Create .env file if it doesn't exist
 if [ ! -f .env ]; then
