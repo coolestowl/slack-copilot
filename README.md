@@ -18,13 +18,13 @@ Before you begin, ensure you have the following installed:
 
 - **Python 3.12+**
 - **uv** (Python package manager): [Installation Guide](https://github.com/astral-sh/uv)
-- **GitHub CLI** with Copilot extension: [Installation Guide](https://cli.github.com/)
+- **GitHub Copilot CLI**: [Installation Guide](https://docs.github.com/en/copilot/using-github-copilot/using-github-copilot-in-the-command-line)
   ```bash
-  # Install GitHub CLI
-  # See: https://github.com/cli/cli#installation
+  # Install GitHub Copilot CLI
+  # See: https://docs.github.com/en/copilot/using-github-copilot/using-github-copilot-in-the-command-line
   
-  # Install Copilot extension
-  gh extension install github/gh-copilot
+  # The standalone copilot CLI will be available after installation
+  copilot --version
   ```
 
 ## Quick Start
@@ -139,7 +139,7 @@ All configuration is done via environment variables:
 |----------|-------------|---------|----------|
 | `SLACK_BOT_TOKEN` | Slack Bot User OAuth Token | - | Yes |
 | `SLACK_APP_TOKEN` | Slack App-Level Token | - | Yes |
-| `COPILOT_CLI_PATH` | Path to GitHub CLI executable | `gh` | No |
+| `COPILOT_CLI_PATH` | Path to Copilot CLI executable | `copilot` | No |
 | `PORT` | Server port (for future use) | `3000` | No |
 
 ## Development
@@ -163,10 +163,10 @@ uv run python main.py
 - Verify your tokens are correct in `.env`
 - Check that the bot is invited to the channel
 
-### "GitHub CLI not found" error
-- Install GitHub CLI: https://cli.github.com/
-- Install Copilot extension: `gh extension install github/gh-copilot`
-- Authenticate: `gh auth login`
+### "Copilot CLI not found" error
+- Install GitHub Copilot CLI: https://docs.github.com/en/copilot/using-github-copilot/using-github-copilot-in-the-command-line
+- Verify installation: `copilot --version`
+- Authenticate: Follow the authentication prompts when first running `copilot`
 
 ### Permission errors
 - Ensure your Slack app has the required scopes

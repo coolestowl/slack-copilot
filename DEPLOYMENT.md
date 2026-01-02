@@ -6,7 +6,7 @@ This guide provides instructions for deploying the Slack Copilot bot to a produc
 
 - A Linux server (Ubuntu 20.04+ recommended)
 - Docker and Docker Compose installed
-- GitHub CLI installed and authenticated
+- GitHub Copilot CLI installed and authenticated
 - Slack Bot tokens
 
 ## Deployment Options
@@ -26,10 +26,11 @@ cp .env.example .env
 nano .env
 ```
 
-3. Authenticate GitHub CLI (for Copilot access):
+3. Authenticate GitHub Copilot CLI:
 ```bash
-gh auth login
-gh extension install github/gh-copilot
+copilot --version
+# Follow authentication prompts on first use
+copilot suggest "test command"
 ```
 
 4. Build and run:
@@ -53,10 +54,9 @@ sudo apt install python3.12 python3.12-venv
 # Install uv
 pip install uv
 
-# Install GitHub CLI
-sudo apt install gh
-gh auth login
-gh extension install github/gh-copilot
+# Install GitHub Copilot CLI
+# Visit: https://docs.github.com/en/copilot/using-github-copilot/using-github-copilot-in-the-command-line
+copilot --version
 ```
 
 2. Clone and setup:
@@ -153,20 +153,21 @@ sudo systemctl status slack-copilot
 
 3. Verify environment variables are set correctly
 
-4. Ensure GitHub CLI is authenticated:
+4. Ensure GitHub Copilot CLI is authenticated:
    ```bash
-   gh auth status
+   copilot --version
    ```
 
 ### GitHub Copilot not working
-1. Ensure GitHub CLI is installed and authenticated
-2. Check if Copilot extension is installed:
+1. Ensure GitHub Copilot CLI is installed and authenticated
+2. Check if Copilot CLI is accessible:
    ```bash
-   gh extension list
+   which copilot
+   copilot --version
    ```
-3. Install if missing:
+3. Authenticate if needed:
    ```bash
-   gh extension install github/gh-copilot
+   copilot suggest "test"
    ```
 
 ## Updating

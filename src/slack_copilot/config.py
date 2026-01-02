@@ -14,7 +14,7 @@ class Config:
     slack_app_token: str
     
     # GitHub Copilot CLI configuration
-    copilot_cli_path: str = "gh"
+    copilot_cli_path: str = "copilot"
     
     # Server configuration
     port: int = 3000
@@ -33,6 +33,6 @@ class Config:
         return cls(
             slack_bot_token=slack_bot_token,
             slack_app_token=slack_app_token,
-            copilot_cli_path=os.getenv("COPILOT_CLI_PATH", "gh"),
+            copilot_cli_path=os.getenv("COPILOT_CLI_PATH", "copilot"),
             port=int(os.getenv("PORT", "3000")),
         )

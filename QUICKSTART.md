@@ -33,17 +33,17 @@ brew install python@3.12
 pip install uv
 ```
 
-### Install GitHub CLI and Copilot
+### Install GitHub Copilot CLI
 
 ```bash
-# Install GitHub CLI
-# Visit: https://github.com/cli/cli#installation
+# Install GitHub Copilot CLI
+# Visit: https://docs.github.com/en/copilot/using-github-copilot/using-github-copilot-in-the-command-line
 
-# Authenticate with GitHub
-gh auth login
+# Verify installation
+copilot --version
 
-# Install Copilot extension
-gh extension install github/gh-copilot
+# Authenticate on first use (follow the prompts)
+copilot suggest "test command"
 ```
 
 ## Step 2: Create Slack App (5 minutes)
@@ -205,22 +205,22 @@ sudo systemctl status slack-copilot
 cat .env | grep TOKEN
 ```
 
-**Check 3**: Is GitHub CLI authenticated?
+**Check 3**: Is Copilot CLI authenticated?
 ```bash
-gh auth status
+copilot --version
 ```
 
-### "GitHub CLI not found" error
+### "Copilot CLI not found" error
 
 ```bash
-# Install GitHub CLI
-# Visit: https://cli.github.com/
+# Install GitHub Copilot CLI
+# Visit: https://docs.github.com/en/copilot/using-github-copilot/using-github-copilot-in-the-command-line
 
-# Install Copilot extension
-gh extension install github/gh-copilot
+# Verify installation
+copilot --version
 
-# Authenticate
-gh auth login
+# Authenticate on first use
+copilot suggest "test command"
 ```
 
 ### Permission errors in Slack

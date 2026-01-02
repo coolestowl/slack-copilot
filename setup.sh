@@ -27,31 +27,22 @@ fi
 
 echo "✅ uv found"
 
-# Check if GitHub CLI is installed
-if ! command -v gh &> /dev/null; then
-    echo "❌ GitHub CLI (gh) is required but not found."
-    echo "Please install it from: https://cli.github.com/"
+# Check if GitHub Copilot CLI is installed
+if ! command -v copilot &> /dev/null; then
+    echo "❌ GitHub Copilot CLI (copilot) is required but not found."
+    echo "Please install it from: https://docs.github.com/en/copilot/using-github-copilot/using-github-copilot-in-the-command-line"
     exit 1
 fi
 
-echo "✅ GitHub CLI found"
+echo "✅ GitHub Copilot CLI found"
 
-# Check if GitHub CLI is authenticated
-if ! gh auth status &> /dev/null; then
-    echo "⚠️  GitHub CLI is not authenticated."
-    echo "Running 'gh auth login'..."
-    gh auth login
+# Check if Copilot CLI is authenticated
+if ! copilot --version &> /dev/null; then
+    echo "⚠️  GitHub Copilot CLI may not be authenticated."
+    echo "Please run 'copilot suggest \"test\"' to authenticate."
 fi
 
-echo "✅ GitHub CLI authenticated"
-
-# Check if Copilot extension is installed
-if ! gh extension list | grep -q "github/gh-copilot"; then
-    echo "📦 Installing GitHub Copilot extension..."
-    gh extension install github/gh-copilot
-fi
-
-echo "✅ GitHub Copilot extension installed"
+echo "✅ GitHub Copilot CLI ready"
 
 # Create .env file if it doesn't exist
 if [ ! -f .env ]; then

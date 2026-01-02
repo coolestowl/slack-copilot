@@ -18,13 +18,13 @@
 
 - **Python 3.12+**
 - **uv**（Python 包管理器）：[安装指南](https://github.com/astral-sh/uv)
-- **GitHub CLI** 和 Copilot 扩展：[安装指南](https://cli.github.com/)
+- **GitHub Copilot CLI**：[安装指南](https://docs.github.com/en/copilot/using-github-copilot/using-github-copilot-in-the-command-line)
   ```bash
-  # 安装 GitHub CLI
-  # 参见：https://github.com/cli/cli#installation
+  # 安装 GitHub Copilot CLI
+  # 参见：https://docs.github.com/en/copilot/using-github-copilot/using-github-copilot-in-the-command-line
   
-  # 安装 Copilot 扩展
-  gh extension install github/gh-copilot
+  # 安装后将可以使用独立的 copilot CLI
+  copilot --version
   ```
 
 ## 快速开始
@@ -141,7 +141,7 @@ slack-copilot/
 |------|------|--------|---------|
 | `SLACK_BOT_TOKEN` | Slack Bot User OAuth Token | - | 是 |
 | `SLACK_APP_TOKEN` | Slack App-Level Token | - | 是 |
-| `COPILOT_CLI_PATH` | GitHub CLI 可执行文件路径 | `gh` | 否 |
+| `COPILOT_CLI_PATH` | Copilot CLI 可执行文件路径 | `copilot` | 否 |
 | `PORT` | 服务器端口（预留） | `3000` | 否 |
 
 ## 开发
@@ -187,10 +187,10 @@ make clean
 - 验证 `.env` 中的 tokens 是否正确
 - 检查机器人是否已被邀请到频道
 
-### "GitHub CLI not found" 错误
-- 安装 GitHub CLI：https://cli.github.com/
-- 安装 Copilot 扩展：`gh extension install github/gh-copilot`
-- 认证：`gh auth login`
+### "Copilot CLI not found" 错误
+- 安装 GitHub Copilot CLI：https://docs.github.com/en/copilot/using-github-copilot/using-github-copilot-in-the-command-line
+- 验证安装：`copilot --version`
+- 认证：首次运行 `copilot` 时按照提示进行认证
 
 ### 权限错误
 - 确保 Slack 应用具有所需的权限范围

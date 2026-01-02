@@ -30,11 +30,11 @@ def sanitize_error_message(error: str) -> str:
 class CopilotCLI:
     """GitHub Copilot CLI integration."""
     
-    def __init__(self, cli_path: str = "gh"):
+    def __init__(self, cli_path: str = "copilot"):
         """Initialize the Copilot CLI integration.
         
         Args:
-            cli_path: Path to the GitHub CLI executable (default: 'gh')
+            cli_path: Path to the Copilot CLI executable (default: 'copilot')
         """
         self.cli_path = cli_path
     
@@ -56,13 +56,12 @@ class CopilotCLI:
             return "❌ Prompt is too long. Please keep it under 1000 characters."
         
         try:
-            # Run GitHub Copilot CLI
-            # Using 'gh copilot suggest' for command suggestions
+            # Run standalone GitHub Copilot CLI
+            # Using 'copilot suggest' for command suggestions
             # Note: The prompt is passed as a separate argument, not concatenated,
             # which prevents command injection
             process = await asyncio.create_subprocess_exec(
                 self.cli_path,
-                "copilot",
                 "suggest",
                 prompt,  # Passed as separate argument, not shell-interpreted
                 stdout=asyncio.subprocess.PIPE,
@@ -81,8 +80,8 @@ class CopilotCLI:
             return result if result else "No response from Copilot CLI"
             
         except FileNotFoundError:
-            logger.error(f"GitHub CLI not found at path: {self.cli_path}")
-            return f"❌ GitHub CLI not found. Please install it: https://cli.github.com/"
+            logger.error(f"Copilot CLI not found at path: {self.cli_path}")
+            return f"❌ Copilot CLI not found. Please install it: https://docs.github.com/en/copilot/using-github-copilot/using-github-copilot-in-the-command-line"
         except Exception as e:
             logger.error(f"Error executing Copilot CLI: {e}")
             return f"❌ An unexpected error occurred. Please try again later."
@@ -107,7 +106,6 @@ class CopilotCLI:
         try:
             process = await asyncio.create_subprocess_exec(
                 self.cli_path,
-                "copilot",
                 "explain",
                 command,  # Passed as separate argument, not shell-interpreted
                 stdout=asyncio.subprocess.PIPE,
@@ -126,8 +124,8 @@ class CopilotCLI:
             return result if result else "No response from Copilot CLI"
             
         except FileNotFoundError:
-            logger.error(f"GitHub CLI not found at path: {self.cli_path}")
-            return f"❌ GitHub CLI not found. Please install it: https://cli.github.com/"
+            logger.error(f"Copilot CLI not found at path: {self.cli_path}")
+            return f"❌ Copilot CLI not found. Please install it: https://docs.github.com/en/copilot/using-github-copilot/using-github-copilot-in-the-command-line"
         except Exception as e:
             logger.error(f"Error executing Copilot CLI: {e}")
             return f"❌ An unexpected error occurred. Please try again later."
