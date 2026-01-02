@@ -1,0 +1,19 @@
+[project]
+name = "slack-copilot"
+version = "0.1.0"
+description = "A Slack bot that integrates with GitHub Copilot CLI for AI-powered command suggestions"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "aiohttp>=3.13.2",
+    "python-dotenv>=1.2.1",
+    "slack-bolt>=1.27.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/coolestowl/slack-copilot"
+Repository = "https://github.com/coolestowl/slack-copilot"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
