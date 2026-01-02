@@ -90,7 +90,7 @@ class SlackCopilotBot:
             message_ts: Message timestamp to update on error
             error_prefix: Optional prefix for error messages (e.g., "<@user> ")
         """
-        logger.debug(f"🤖 Sending message to Copilot - Prompt: {prompt[:100]}{'...' if len(prompt) > 100 else ''}")
+        logger.debug(f"🤖 Sending message to Copilot - Prompt length: {len(prompt)} characters")
         try:
             await self.copilot.send_message(prompt, update_callback)
             logger.info(f"✅ Successfully processed Copilot response for channel {channel}")
@@ -115,7 +115,7 @@ class SlackCopilotBot:
             # Log incoming mention event for debugging
             logger.info(
                 f"📨 Received app_mention event - User: {user}, Channel: {channel}, "
-                f"Text: {text[:100]}{'...' if len(text) > 100 else ''}, "
+                f"Message length: {len(text)} characters, "
                 f"Event timestamp: {event.get('ts', 'N/A')}"
             )
             
@@ -144,7 +144,7 @@ class SlackCopilotBot:
             # Log incoming slash command for debugging
             logger.info(
                 f"📨 Received /copilot command - User: {user}, Channel: {channel}, "
-                f"Command text: {text[:100]}{'...' if len(text) > 100 else ''}, "
+                f"Command length: {len(text)} characters, "
                 f"Command ID: {command.get('command_id', 'N/A')}"
             )
             
@@ -189,7 +189,7 @@ class SlackCopilotBot:
             # Log incoming direct message event for debugging
             logger.info(
                 f"📨 Received message event (DM) - User: {user}, Channel: {channel}, "
-                f"Text: {text[:100]}{'...' if len(text) > 100 else ''}, "
+                f"Message length: {len(text)} characters, "
                 f"Event timestamp: {event.get('ts', 'N/A')}"
             )
             
