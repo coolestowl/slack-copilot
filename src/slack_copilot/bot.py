@@ -52,9 +52,6 @@ class SlackCopilotBot:
                 await say(f"Hi <@{user}>! Ask me anything about commands. For example: '@bot how do I list files?'")
                 return
             
-            # Show typing indicator
-            await say(f"🤔 Thinking about your question...")
-            
             # Check if it's an explain request
             if prompt.lower().startswith("explain "):
                 command = prompt[8:].strip()
@@ -75,8 +72,6 @@ class SlackCopilotBot:
             if not text:
                 await say("Please provide a question or command. Example: `/copilot how do I find large files?`")
                 return
-            
-            await say(f"🤔 Processing your request...")
             
             # Check if it's an explain request
             if text.lower().startswith("explain "):
