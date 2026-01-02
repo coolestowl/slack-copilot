@@ -49,6 +49,7 @@ class SlackCopilotBot:
         )
         message_ts = result["ts"]
         self.active_messages[channel] = message_ts
+        logger.debug(f"📤 Posted initial message to channel {channel}, message_ts: {message_ts}")
         return message_ts
     
     def _create_update_callback(self, client, channel: str, message_ts: str, user_prefix: str = ""):
@@ -89,8 +90,10 @@ class SlackCopilotBot:
             message_ts: Message timestamp to update on error
             error_prefix: Optional prefix for error messages (e.g., "<@user> ")
         """
+        logger.debug(f"🤖 Sending message to Copilot - Prompt length: {len(prompt)} characters")
         try:
             await self.copilot.send_message(prompt, update_callback)
+            logger.info(f"✅ Successfully processed Copilot response for channel {channel}")
         except Exception as e:
             logger.error(f"Error communicating with Copilot: {e}")
             await client.chat_update(
@@ -108,6 +111,13 @@ class SlackCopilotBot:
             text = event.get("text", "")
             user = event.get("user")
             channel = event.get("channel")
+            
+            # Log incoming mention event for debugging
+            logger.info(
+                f"📨 Received app_mention event - User: {user}, Channel: {channel}, "
+                f"Message length: {len(text) if text else 0} characters, "
+                f"Event timestamp: {event.get('ts', 'N/A')}"
+            )
             
             # Remove the bot mention from the text
             words = text.split(maxsplit=1)
@@ -131,6 +141,13 @@ class SlackCopilotBot:
             user = command.get("user_id")
             channel = command.get("channel_id")
             
+            # Log incoming slash command for debugging
+            logger.info(
+                f"📨 Received /copilot command - User: {user}, Channel: {channel}, "
+                f"Command length: {len(text) if text else 0} characters, "
+                f"Command ID: {command.get('command_id', 'N/A')}"
+            )
+            
             if not text:
                 await say("Please provide a question. Example: `/copilot how do I list files?`")
                 return
@@ -145,6 +162,10 @@ class SlackCopilotBot:
             """Handle direct messages to the bot."""
             # Skip bot messages and thread replies
             if event.get("bot_id") or event.get("thread_ts"):
+                logger.debug(
+                    f"🔇 Skipping message event - Bot message: {bool(event.get('bot_id'))}, "
+                    f"Thread reply: {bool(event.get('thread_ts'))}"
+                )
                 return
             
             channel = event.get("channel")
@@ -152,13 +173,25 @@ class SlackCopilotBot:
             text = event.get("text", "").strip()
             
             if not text:
+                logger.debug(f"🔇 Skipping empty message event - Channel: {channel}, User: {user}")
                 return
             
             # Check if this is a DM or the bot is in the channel
             channel_type = event.get("channel_type")
             if channel_type != "im":
                 # Not a DM, ignore unless mentioned (handled by app_mention)
+                logger.debug(
+                    f"🔇 Skipping non-DM message event - Channel: {channel}, "
+                    f"Channel type: {channel_type}, User: {user}"
+                )
                 return
+            
+            # Log incoming direct message event for debugging
+            logger.info(
+                f"📨 Received message event (DM) - User: {user}, Channel: {channel}, "
+                f"Message length: {len(text)} characters, "
+                f"Event timestamp: {event.get('ts', 'N/A')}"
+            )
             
             message_ts = await self._post_initial_message(client, channel, "Thinking...")
             update_callback = self._create_update_callback(client, channel, message_ts)
