@@ -2,7 +2,7 @@
 
 import asyncio
 import logging
-from typing import Optional, Callable
+from typing import Optional, Callable, Awaitable
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +23,7 @@ class CopilotCLI:
     async def start(self):
         """Start the Copilot CLI in REPL mode."""
         try:
+            # Start copilot without subcommand to enter interactive REPL
             self.process = await asyncio.create_subprocess_exec(
                 self.cli_path,
                 stdin=asyncio.subprocess.PIPE,
@@ -55,12 +56,12 @@ class CopilotCLI:
                 await self.process.wait()
             logger.info("Copilot CLI REPL stopped")
     
-    async def send_message(self, message: str, output_callback: Callable[[str], None]):
+    async def send_message(self, message: str, output_callback: Callable[[str], Awaitable[None]]):
         """Send a message to Copilot REPL and stream output.
         
         Args:
             message: The message to send to Copilot
-            output_callback: Async function called with each chunk of output
+            output_callback: Async function called with accumulated output chunks
         """
         if not self.process or not self.process.stdin:
             raise RuntimeError("Copilot CLI REPL not started")
@@ -82,28 +83,29 @@ class CopilotCLI:
             self._stream_output(output_callback)
         )
     
-    async def _stream_output(self, output_callback: Callable[[str], None]):
+    async def _stream_output(self, output_callback: Callable[[str], Awaitable[None]]):
         """Stream output from Copilot CLI.
         
         Args:
-            output_callback: Async function called with each chunk of output
+            output_callback: Async function called with accumulated output
         """
         if not self.process or not self.process.stdout:
             return
         
         try:
             buffer = ""
+            last_update = asyncio.get_event_loop().time()
+            
             while True:
-                # Read output every second
+                # Read output with timeout
                 try:
-                    # Try to read available data
                     chunk = await asyncio.wait_for(
                         self.process.stdout.read(1024),
                         timeout=1.0
                     )
                     
                     if not chunk:
-                        # Process ended
+                        # Process ended or no more output
                         if buffer:
                             await output_callback(buffer)
                         break
@@ -111,16 +113,20 @@ class CopilotCLI:
                     text = chunk.decode('utf-8', errors='replace')
                     buffer += text
                     
-                    # Send accumulated buffer to callback
-                    if buffer:
-                        await output_callback(buffer)
-                        buffer = ""
+                    # Update Slack every second to avoid rate limiting
+                    current_time = asyncio.get_event_loop().time()
+                    if current_time - last_update >= 1.0:
+                        if buffer:
+                            await output_callback(buffer)
+                            last_update = current_time
                         
                 except asyncio.TimeoutError:
-                    # No data available, send buffer if we have any
-                    if buffer:
+                    # No data available within timeout
+                    # Send any accumulated buffer if it's been a second since last update
+                    current_time = asyncio.get_event_loop().time()
+                    if buffer and (current_time - last_update >= 1.0):
                         await output_callback(buffer)
-                        buffer = ""
+                        last_update = current_time
                     continue
                     
         except asyncio.CancelledError:
