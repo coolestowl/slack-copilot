@@ -1,8 +1,8 @@
-"""Slack bot implementation."""
+"""Slack bot implementation with streaming Copilot responses."""
 
 import logging
 import asyncio
-from typing import Optional
+from typing import Optional, Dict
 
 from slack_bolt.async_app import AsyncApp
 from slack_bolt.adapter.socket_mode.async_handler import AsyncSocketModeHandler
@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class SlackCopilotBot:
-    """Slack bot that integrates with GitHub Copilot CLI."""
+    """Slack bot that integrates with GitHub Copilot CLI in REPL mode."""
     
     def __init__(self, config: Config):
         """Initialize the Slack bot.
@@ -26,69 +26,178 @@ class SlackCopilotBot:
         self.app = AsyncApp(token=config.slack_bot_token)
         self.copilot = CopilotCLI(config.copilot_cli_path)
         
+        # Track active conversations: channel_id -> message_ts
+        self.active_messages: Dict[str, str] = {}
+        
         # Register event handlers
         self._register_handlers()
     
     def _register_handlers(self):
         """Register Slack event handlers."""
         
-        @self.app.message("hello")
-        async def message_hello(message, say):
-            """Respond to hello messages."""
-            await say(f"Hey there <@{message['user']}>! 👋")
-        
         @self.app.event("app_mention")
-        async def handle_app_mention(event, say):
+        async def handle_app_mention(event, say, client):
             """Handle app mentions (@bot message)."""
             text = event.get("text", "")
             user = event.get("user")
+            channel = event.get("channel")
             
             # Remove the bot mention from the text
-            # The text typically starts with <@BOTID>
             words = text.split(maxsplit=1)
             if len(words) > 1:
                 prompt = words[1].strip()
             else:
-                await say(f"Hi <@{user}>! Ask me anything about commands. For example: '@bot how do I list files?'")
+                await say(f"Hi <@{user}>! Send me a message and I'll respond with Copilot.")
                 return
             
-            # Check if it's an explain request
-            if prompt.lower().startswith("explain "):
-                command = prompt[8:].strip()
-                response = await self.copilot.explain_command(command)
-            else:
-                response = await self.copilot.execute_command(prompt)
+            # Post initial message
+            result = await client.chat_postMessage(
+                channel=channel,
+                text=f"<@{user}> Thinking..."
+            )
+            message_ts = result["ts"]
+            self.active_messages[channel] = message_ts
             
-            await say(f"<@{user}> {response}")
+            # Create callback to update message
+            full_response = [""]
+            
+            async def update_slack(chunk: str):
+                full_response[0] += chunk
+                try:
+                    await client.chat_update(
+                        channel=channel,
+                        ts=message_ts,
+                        text=f"<@{user}> {full_response[0]}"
+                    )
+                except Exception as e:
+                    logger.error(f"Error updating message: {e}")
+            
+            # Send message to Copilot
+            try:
+                await self.copilot.send_message(prompt, update_slack)
+            except Exception as e:
+                logger.error(f"Error communicating with Copilot: {e}")
+                await client.chat_update(
+                    channel=channel,
+                    ts=message_ts,
+                    text=f"<@{user}> ❌ Error: {str(e)}"
+                )
         
         @self.app.command("/copilot")
-        async def handle_copilot_command(ack, command, say):
+        async def handle_copilot_command(ack, command, say, client):
             """Handle /copilot slash command."""
             await ack()
             
             text = command.get("text", "").strip()
             user = command.get("user_id")
+            channel = command.get("channel_id")
             
             if not text:
-                await say("Please provide a question or command. Example: `/copilot how do I find large files?`")
+                await say("Please provide a question. Example: `/copilot how do I list files?`")
                 return
             
-            # Check if it's an explain request
-            if text.lower().startswith("explain "):
-                cmd = text[8:].strip()
-                response = await self.copilot.explain_command(cmd)
-            else:
-                response = await self.copilot.execute_command(text)
+            # Post initial message
+            result = await client.chat_postMessage(
+                channel=channel,
+                text=f"<@{user}> Thinking..."
+            )
+            message_ts = result["ts"]
+            self.active_messages[channel] = message_ts
             
-            await say(f"<@{user}> {response}")
+            # Create callback to update message
+            full_response = [""]
+            
+            async def update_slack(chunk: str):
+                full_response[0] += chunk
+                try:
+                    await client.chat_update(
+                        channel=channel,
+                        ts=message_ts,
+                        text=f"<@{user}> {full_response[0]}"
+                    )
+                except Exception as e:
+                    logger.error(f"Error updating message: {e}")
+            
+            # Send message to Copilot
+            try:
+                await self.copilot.send_message(text, update_slack)
+            except Exception as e:
+                logger.error(f"Error communicating with Copilot: {e}")
+                await client.chat_update(
+                    channel=channel,
+                    ts=message_ts,
+                    text=f"<@{user}> ❌ Error: {str(e)}"
+                )
         
         @self.app.event("message")
-        async def handle_message_events(body, logger):
-            """Log message events."""
-            logger.info(body)
+        async def handle_message_events(event, say, client):
+            """Handle direct messages to the bot."""
+            # Skip bot messages and thread replies
+            if event.get("bot_id") or event.get("thread_ts"):
+                return
+            
+            channel = event.get("channel")
+            user = event.get("user")
+            text = event.get("text", "").strip()
+            
+            if not text:
+                return
+            
+            # Check if this is a DM or the bot is in the channel
+            channel_type = event.get("channel_type")
+            if channel_type != "im":
+                # Not a DM, ignore unless mentioned (handled by app_mention)
+                return
+            
+            # Post initial message
+            result = await client.chat_postMessage(
+                channel=channel,
+                text="Thinking..."
+            )
+            message_ts = result["ts"]
+            self.active_messages[channel] = message_ts
+            
+            # Create callback to update message
+            full_response = [""]
+            
+            async def update_slack(chunk: str):
+                full_response[0] += chunk
+                try:
+                    await client.chat_update(
+                        channel=channel,
+                        ts=message_ts,
+                        text=full_response[0]
+                    )
+                except Exception as e:
+                    logger.error(f"Error updating message: {e}")
+            
+            # Send message to Copilot
+            try:
+                await self.copilot.send_message(text, update_slack)
+            except Exception as e:
+                logger.error(f"Error communicating with Copilot: {e}")
+                await client.chat_update(
+                    channel=channel,
+                    ts=message_ts,
+                    text=f"❌ Error: {str(e)}"
+                )
     
     async def start(self):
-        """Start the Slack bot."""
+        """Start the Slack bot and Copilot REPL."""
         logger.info("Starting Slack Copilot Bot...")
+        
+        # Start Copilot REPL
+        try:
+            await self.copilot.start()
+        except Exception as e:
+            logger.error(f"Failed to start Copilot CLI: {e}")
+            raise
+        
+        # Start Slack bot
         handler = AsyncSocketModeHandler(self.app, self.config.slack_app_token)
         await handler.start_async()
+    
+    async def stop(self):
+        """Stop the bot and cleanup."""
+        logger.info("Stopping Slack Copilot Bot...")
+        await self.copilot.stop()
