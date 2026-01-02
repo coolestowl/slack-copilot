@@ -32,6 +32,73 @@ class SlackCopilotBot:
         # Register event handlers
         self._register_handlers()
     
+    async def _post_initial_message(self, client, channel: str, text: str) -> str:
+        """Post initial 'Thinking...' message and return message timestamp.
+        
+        Args:
+            client: Slack client
+            channel: Channel ID to post message in
+            text: Initial text to display
+            
+        Returns:
+            Message timestamp of the posted message
+        """
+        result = await client.chat_postMessage(
+            channel=channel,
+            text=text
+        )
+        message_ts = result["ts"]
+        self.active_messages[channel] = message_ts
+        return message_ts
+    
+    def _create_update_callback(self, client, channel: str, message_ts: str, user_prefix: str = ""):
+        """Create a callback function to update Slack message with streaming response.
+        
+        Args:
+            client: Slack client
+            channel: Channel ID
+            message_ts: Message timestamp to update
+            user_prefix: Optional prefix for the message (e.g., "<@user> ")
+            
+        Returns:
+            Async callback function that updates the message
+        """
+        full_response = [""]
+        
+        async def update_slack(chunk: str):
+            full_response[0] += chunk
+            try:
+                await client.chat_update(
+                    channel=channel,
+                    ts=message_ts,
+                    text=f"{user_prefix}{full_response[0]}"
+                )
+            except Exception as e:
+                logger.error(f"Error updating message: {e}")
+        
+        return update_slack
+    
+    async def _send_to_copilot(self, prompt: str, update_callback, client, channel: str, message_ts: str, error_prefix: str = ""):
+        """Send message to Copilot and handle errors.
+        
+        Args:
+            prompt: Message to send to Copilot
+            update_callback: Callback function to update Slack message
+            client: Slack client for error updates
+            channel: Channel ID
+            message_ts: Message timestamp to update on error
+            error_prefix: Optional prefix for error messages (e.g., "<@user> ")
+        """
+        try:
+            await self.copilot.send_message(prompt, update_callback)
+        except Exception as e:
+            logger.error(f"Error communicating with Copilot: {e}")
+            await client.chat_update(
+                channel=channel,
+                ts=message_ts,
+                text=f"{error_prefix}❌ Error: {str(e)}"
+            )
+    
     def _register_handlers(self):
         """Register Slack event handlers."""
         
@@ -50,38 +117,10 @@ class SlackCopilotBot:
                 await say(f"Hi <@{user}>! Send me a message and I'll respond with Copilot.")
                 return
             
-            # Post initial message
-            result = await client.chat_postMessage(
-                channel=channel,
-                text=f"<@{user}> Thinking..."
-            )
-            message_ts = result["ts"]
-            self.active_messages[channel] = message_ts
-            
-            # Create callback to update message
-            full_response = [""]
-            
-            async def update_slack(chunk: str):
-                full_response[0] += chunk
-                try:
-                    await client.chat_update(
-                        channel=channel,
-                        ts=message_ts,
-                        text=f"<@{user}> {full_response[0]}"
-                    )
-                except Exception as e:
-                    logger.error(f"Error updating message: {e}")
-            
-            # Send message to Copilot
-            try:
-                await self.copilot.send_message(prompt, update_slack)
-            except Exception as e:
-                logger.error(f"Error communicating with Copilot: {e}")
-                await client.chat_update(
-                    channel=channel,
-                    ts=message_ts,
-                    text=f"<@{user}> ❌ Error: {str(e)}"
-                )
+            user_prefix = f"<@{user}> "
+            message_ts = await self._post_initial_message(client, channel, f"{user_prefix}Thinking...")
+            update_callback = self._create_update_callback(client, channel, message_ts, user_prefix)
+            await self._send_to_copilot(prompt, update_callback, client, channel, message_ts, user_prefix)
         
         @self.app.command("/copilot")
         async def handle_copilot_command(ack, command, say, client):
@@ -96,38 +135,10 @@ class SlackCopilotBot:
                 await say("Please provide a question. Example: `/copilot how do I list files?`")
                 return
             
-            # Post initial message
-            result = await client.chat_postMessage(
-                channel=channel,
-                text=f"<@{user}> Thinking..."
-            )
-            message_ts = result["ts"]
-            self.active_messages[channel] = message_ts
-            
-            # Create callback to update message
-            full_response = [""]
-            
-            async def update_slack(chunk: str):
-                full_response[0] += chunk
-                try:
-                    await client.chat_update(
-                        channel=channel,
-                        ts=message_ts,
-                        text=f"<@{user}> {full_response[0]}"
-                    )
-                except Exception as e:
-                    logger.error(f"Error updating message: {e}")
-            
-            # Send message to Copilot
-            try:
-                await self.copilot.send_message(text, update_slack)
-            except Exception as e:
-                logger.error(f"Error communicating with Copilot: {e}")
-                await client.chat_update(
-                    channel=channel,
-                    ts=message_ts,
-                    text=f"<@{user}> ❌ Error: {str(e)}"
-                )
+            user_prefix = f"<@{user}> "
+            message_ts = await self._post_initial_message(client, channel, f"{user_prefix}Thinking...")
+            update_callback = self._create_update_callback(client, channel, message_ts, user_prefix)
+            await self._send_to_copilot(text, update_callback, client, channel, message_ts, user_prefix)
         
         @self.app.event("message")
         async def handle_message_events(event, say, client):
@@ -149,38 +160,9 @@ class SlackCopilotBot:
                 # Not a DM, ignore unless mentioned (handled by app_mention)
                 return
             
-            # Post initial message
-            result = await client.chat_postMessage(
-                channel=channel,
-                text="Thinking..."
-            )
-            message_ts = result["ts"]
-            self.active_messages[channel] = message_ts
-            
-            # Create callback to update message
-            full_response = [""]
-            
-            async def update_slack(chunk: str):
-                full_response[0] += chunk
-                try:
-                    await client.chat_update(
-                        channel=channel,
-                        ts=message_ts,
-                        text=full_response[0]
-                    )
-                except Exception as e:
-                    logger.error(f"Error updating message: {e}")
-            
-            # Send message to Copilot
-            try:
-                await self.copilot.send_message(text, update_slack)
-            except Exception as e:
-                logger.error(f"Error communicating with Copilot: {e}")
-                await client.chat_update(
-                    channel=channel,
-                    ts=message_ts,
-                    text=f"❌ Error: {str(e)}"
-                )
+            message_ts = await self._post_initial_message(client, channel, "Thinking...")
+            update_callback = self._create_update_callback(client, channel, message_ts)
+            await self._send_to_copilot(text, update_callback, client, channel, message_ts)
     
     async def start(self):
         """Start the Slack bot and Copilot REPL."""
