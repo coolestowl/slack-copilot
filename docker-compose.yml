@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  slack-copilot:
+    build: .
+    container_name: slack-copilot
+    restart: unless-stopped
+    environment:
+      - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}
+      - SLACK_APP_TOKEN=${SLACK_APP_TOKEN}
+      - COPILOT_CLI_PATH=${COPILOT_CLI_PATH:-gh}
+      - PORT=${PORT:-3000}
+    volumes:
+      # Mount GitHub CLI config for authentication
+      - ~/.config/gh:/root/.config/gh:ro
+    env_file:
+      - .env
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
