@@ -2,6 +2,8 @@
 
 A Slack bot that integrates with GitHub Copilot CLI to provide AI-powered command suggestions and explanations directly in your Slack workspace.
 
+English | [简体中文](README_CN.md)
+
 ## Features
 
 - 🤖 **AI Command Suggestions**: Get command-line suggestions using GitHub Copilot
