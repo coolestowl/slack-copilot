@@ -115,7 +115,7 @@ class SlackCopilotBot:
             # Log incoming mention event for debugging
             logger.info(
                 f"📨 Received app_mention event - User: {user}, Channel: {channel}, "
-                f"Message length: {len(text)} characters, "
+                f"Message length: {len(text) if text else 0} characters, "
                 f"Event timestamp: {event.get('ts', 'N/A')}"
             )
             
@@ -144,7 +144,7 @@ class SlackCopilotBot:
             # Log incoming slash command for debugging
             logger.info(
                 f"📨 Received /copilot command - User: {user}, Channel: {channel}, "
-                f"Command length: {len(text)} characters, "
+                f"Command length: {len(text) if text else 0} characters, "
                 f"Command ID: {command.get('command_id', 'N/A')}"
             )
             
