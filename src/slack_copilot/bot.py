@@ -64,18 +64,47 @@ class SlackCopilotBot:
         Returns:
             Async callback function that updates the message
         """
-        full_response = [""]
+        # State to track message splitting
+        state = {
+            "current_ts": message_ts,
+            "current_text": "",
+            "is_first_message": True
+        }
+        
+        # Slack message limit is ~4000 chars. Use a safe limit.
+        MAX_LENGTH = 3500
         
         async def update_slack(chunk: str):
-            full_response[0] += chunk
-            try:
-                await client.chat_update(
-                    channel=channel,
-                    ts=message_ts,
-                    text=f"{user_prefix}{full_response[0]}"
-                )
-            except Exception as e:
-                logger.error(f"Error updating message: {e}")
+            prefix = user_prefix if state["is_first_message"] else ""
+            current_length = len(prefix) + len(state["current_text"])
+            
+            # Check if adding chunk would exceed limit
+            if current_length + len(chunk) > MAX_LENGTH:
+                # Start a new message
+                try:
+                    # The new message starts with the chunk
+                    new_text = chunk
+                    result = await client.chat_postMessage(
+                        channel=channel,
+                        text=new_text
+                    )
+                    state["current_ts"] = result["ts"]
+                    state["current_text"] = new_text
+                    state["is_first_message"] = False
+                    logger.debug(f"Started new message segment: {state['current_ts']}")
+                except Exception as e:
+                    logger.error(f"Error creating new message segment: {e}")
+            else:
+                # Append to current message
+                state["current_text"] += chunk
+                try:
+                    await client.chat_update(
+                        channel=channel,
+                        ts=state["current_ts"],
+                        text=f"{prefix}{state['current_text']}"
+                    )
+                except Exception as e:
+                    logger.error(f"Error updating message: {e}")
         
         return update_slack
     
