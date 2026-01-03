@@ -116,7 +116,7 @@ class CopilotCLI:
                 pass
 
         # Write message to master_fd with newline
-        os.write(self.master_fd, (message + "\n").encode())
+        os.write(self.master_fd, (message + "\r").encode())
         logger.info(f"Sent message to Copilot: {message[:50]}...")
         
         self._output_task = asyncio.create_task(
